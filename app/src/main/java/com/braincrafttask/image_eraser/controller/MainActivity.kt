@@ -54,7 +54,5 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
         mMagnifyView.bitmap = mPreview.getBitmap()
         mMagnifyView.toTranslate(point, mPreview.getCurrentScale())
         mMagnifyView.visibility = if(action == EraserImageView.FingerListener.START) View.VISIBLE else View.GONE
-
-        Log.wtf("xyz", "moved action " + action)
     }
 }

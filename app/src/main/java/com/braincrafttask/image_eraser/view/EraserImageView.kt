@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.widget.ImageView
+import com.braincrafttask.image_eraser.model.EraserState
 import java.lang.ClassCastException
 import java.util.*
 
@@ -51,6 +52,8 @@ class EraserImageView: ImageView {
     private var mCurrentScale: Float = 1.0f
 
     private var mFingerListener: FingerListener? = null
+
+    private val mStates: Vector<EraserState> = Vector()
 
     constructor(context: Context): this(context, null)
 
@@ -120,7 +123,6 @@ class EraserImageView: ImageView {
 
             when(action) {
                 MotionEvent.ACTION_DOWN -> {
-                    Log.wtf(TAG, "action down")
                     mCirclePaintable = true
                     mPath = Path()
                     mPath.moveTo(realX, realY)
@@ -129,24 +131,19 @@ class EraserImageView: ImageView {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     mPath.lineTo(realX, realY)
-                    // mMagnifyView.toTranslate(pointF)
-                    // mMagnifyView.invalidate()
                     mOrinCanvas.drawPath(mPath, mPaint)
                     mMaskCanvas.drawPath(mPath, mMaskPaint)
 
                     currentAction = FingerListener.START
                 }
                 MotionEvent.ACTION_UP -> {
-                    Log.wtf(TAG, "action up")
                     mCirclePaintable = false
                     //setImageBitmap()
                     currentAction = FingerListener.STOP
                 }
                 MotionEvent.ACTION_CANCEL -> {
-                    Log.wtf(TAG, "action cancel")
                 }
                 MotionEvent.ACTION_OUTSIDE -> {
-                    Log.wtf(TAG, "action outside")
                 } else -> {
                 }
             }
@@ -154,7 +151,6 @@ class EraserImageView: ImageView {
             mFingerListener?.let {
                 it.onMoved(PointF(realX, realY), currentAction)
             }
-            //imageMatrix = mMatrix
         }
 
         invalidate()
@@ -184,9 +180,7 @@ class EraserImageView: ImageView {
     }
 
     private fun fitScreen() {
-        Log.wtf(TAG, "fit screen")
         val drawable = drawable
-        Log.wtf(TAG, "" + (drawable == null))
         if (drawable != null && drawable.intrinsicWidth != 0 && drawable.intrinsicHeight != 0) {
             val bmWidth = drawable.intrinsicWidth
             val bmHeight = drawable.intrinsicHeight
@@ -200,12 +194,6 @@ class EraserImageView: ImageView {
             imageMatrix = this.mMatrix
 
             this.mMatrix.getValues(mMatVals)
-
-            Log.wtf(TAG, "scale " + mCurrentScale
-            + "\n view " + viewWidth + ", " + viewHeight
-            + "\n orig " + origWidth + ", " + origHeight
-            + "\n redunt " + redundantXSpace + ", " + redundantYSpace
-            + "\n bmp " + bmWidth + ", " + bmHeight)
         }
     }
 
@@ -233,7 +221,6 @@ class EraserImageView: ImageView {
         }
 
         invertMaskBmp()
-        //mMaskBmp = generateInvertedMaskBmp()
         mMaskCanvas.setBitmap(mMaskBmp)
 
         initEditableBmp()
