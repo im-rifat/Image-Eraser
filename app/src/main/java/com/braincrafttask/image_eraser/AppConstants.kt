@@ -1,7 +1,6 @@
 package com.braincrafttask.image_eraser
 
-class AppConstants {
-    companion object {
-        const val IE_PATH = "_ie_path_"
-    }
+object AppConstants {
+    const val IE_PATH = "_ie_path_"
+    const val RC_IMAGE_PICKER = 101
 }

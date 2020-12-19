@@ -10,7 +10,7 @@ import com.braincrafttask.image_eraser.R
 
 class MagnifyView: ImageView {
 
-    private val CIRCLE_RADIUS = context.resources.displayMetrics.density * 90f
+    private val CIRCLE_RADIUS = context.resources.displayMetrics.density * 80f
     private val START_POS = resources.displayMetrics.density * 10f
 
     private var mPaint: Paint = Paint().apply {

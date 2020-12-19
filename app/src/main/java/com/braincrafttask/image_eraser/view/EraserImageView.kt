@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.ImageView
 import com.braincrafttask.image_eraser.model.EraserState
+import org.nativelib.wrapper.NativeHelper
 import java.lang.ClassCastException
 import java.util.*
 
@@ -66,6 +67,7 @@ class EraserImageView: ImageView {
         mPaint.color = Color.BLACK
         mPaint.strokeWidth = 36.0f
         mPaint.strokeCap = Paint.Cap.ROUND
+        mPaint.strokeJoin = Paint.Join.ROUND
         mPaint.style = Paint.Style.STROKE
         mPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
 
@@ -75,6 +77,7 @@ class EraserImageView: ImageView {
         mMaskPaint.color = Color.TRANSPARENT
         mMaskPaint.strokeWidth = 36.0f
         mMaskPaint.strokeCap = Paint.Cap.ROUND
+        mMaskPaint.strokeJoin = Paint.Join.ROUND
         mMaskPaint.style = Paint.Style.STROKE
 
         mPath = Path()
@@ -220,7 +223,8 @@ class EraserImageView: ImageView {
             mMaskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         }
 
-        invertMaskBmp()
+        NativeHelper.invertMaskImg(mMaskBmp)
+        //invertMaskBmp()
         mMaskCanvas.setBitmap(mMaskBmp)
 
         initEditableBmp()

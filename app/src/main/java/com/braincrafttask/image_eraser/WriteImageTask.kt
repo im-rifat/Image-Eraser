@@ -15,7 +15,6 @@ class WriteImageTask(context: Context) {
 
     fun saveImage(bitmap: Bitmap): String {
         val file = File(path, "${UUID.randomUUID()}.png")
-        Log.wtf("xyz", file.path)
 
         try {
             // Get the file output stream
