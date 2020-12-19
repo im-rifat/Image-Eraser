@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BrainCraftTask</string>
+    <string name="label_undo">Undo</string>
+    <string name="label_invert">Invert</string>
+    <string name="label_save">Save</string>
+    <string name="label_load_image">Load Image</string>
+</resources>

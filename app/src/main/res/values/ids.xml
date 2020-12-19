@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <item name="btnUndo" type="id"/>
+    <item name="btnInvert" type="id"/>
+    <item name="btnSave" type="id"/>
+    <item name="eraserView" type="id"/>
+    <item name="eraserTopMenuHolder" type="id"/>
+    <item name="imgPreview" type="id"/>
+    <item name="btnLoadImage" type="id"/>
+    <item name="magnifyView" type="id"/>
+
+</resources>
