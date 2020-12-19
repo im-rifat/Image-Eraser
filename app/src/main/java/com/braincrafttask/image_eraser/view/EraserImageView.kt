@@ -211,7 +211,6 @@ class EraserImageView: ImageView {
         }
 
         NativeHelper.invertMaskImg(mMaskBmp)
-        //invertMaskBmp()
         mMaskCanvas.setBitmap(mMaskBmp)
 
         initEditableBmp()
@@ -231,21 +230,5 @@ class EraserImageView: ImageView {
         canvas.drawBitmap(mMaskBmp, 0f, 0f, paint)
 
         mOrinCanvas.setBitmap(mEditableBmp)
-    }
-
-    private fun invertMaskBmp() {
-        for(i in 0..mMaskBmp.width-1) {
-            for(j in 0..mMaskBmp.height-1) {
-                var color = mMaskBmp.getPixel(i, j)
-                if(mInverted) {
-                    if(color == Color.BLACK) color = Color.TRANSPARENT
-                    else color = Color.BLACK
-                } else {
-                    if(color == Color.TRANSPARENT) color = Color.BLACK
-                    else color = Color.TRANSPARENT
-                }
-                mMaskBmp.setPixel(i, j, color)
-            }
-        }
     }
 }
