@@ -40,7 +40,7 @@ JNIEXPORT void JNICALL JNI_METHOD(invertMaskImg) (JNIEnv *env, jobject thiz, job
     int height = imgInfo.height;
     int length = width * height;
 
-    uint32_t *ptr = (uint32_t *) bitmapPixels;
+    int *ptr = (int *) bitmapPixels;
 
     for(int i = 0; i < length; i++) {
         if(ptr[i] == black) {

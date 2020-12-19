@@ -25,23 +25,43 @@ class EraserImageView: ImageView {
 
     private val TAG = EraserImageView::class.java.simpleName
 
-    private lateinit var mOrinCanvas: Canvas
+    private val BRUSH_SIZE = resources.displayMetrics.density * 20f
+
+    private val mOrinCanvas = Canvas()
     private lateinit var mOriginalBmp: Bitmap
     private lateinit var mEditableBmp: Bitmap
 
-    private lateinit var mPaint: Paint
+    private var mBrushPaint = Paint().apply {
+        isAntiAlias = true
+        isDither = true
+        color = Color.BLACK
+        strokeWidth = BRUSH_SIZE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        style = Paint.Style.STROKE
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+    }
 
-    private lateinit var mPath: Path
+    private var mPath = Path()
 
     private val mMatVals = FloatArray(9)
-    private lateinit var mMatrix: Matrix
+    private var mMatrix = Matrix()
 
-    private lateinit var mMaskCanvas: Canvas
+    private val mMaskCanvas = Canvas()
     private lateinit var mMaskBmp: Bitmap
-    private lateinit var mMaskPaint: Paint
+    private var mMaskBrushPaint = Paint(mBrushPaint).apply {
+        color = Color.TRANSPARENT
+    }
 
-    private lateinit var mLastPoint: PointF
-    private lateinit var mCirclePaint: Paint
+    private var mLastPoint = PointF()
+    private var mCirclePaint = Paint().apply {
+        isAntiAlias = true
+        isDither = true
+        color = Color.LTGRAY
+        style = Paint.Style.STROKE
+        strokeWidth = 5.0f
+    }
+
     private var mCirclePaintable: Boolean = false
 
     private var viewHeight: Int = 0
@@ -61,40 +81,8 @@ class EraserImageView: ImageView {
     constructor(context: Context, attrs: AttributeSet?): this(context, attrs, -1)
 
     constructor(context: Context, attrs: AttributeSet?, style: Int): super(context, attrs, style) {
-        mPaint = Paint()
-        mPaint.isAntiAlias = true
-        mPaint.isDither = true
-        mPaint.color = Color.BLACK
-        mPaint.strokeWidth = 36.0f
-        mPaint.strokeCap = Paint.Cap.ROUND
-        mPaint.strokeJoin = Paint.Join.ROUND
-        mPaint.style = Paint.Style.STROKE
-        mPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
-
-        mMaskPaint = Paint()
-        mMaskPaint.isAntiAlias = true
-        mMaskPaint.isDither = true
-        mMaskPaint.color = Color.TRANSPARENT
-        mMaskPaint.strokeWidth = 36.0f
-        mMaskPaint.strokeCap = Paint.Cap.ROUND
-        mMaskPaint.strokeJoin = Paint.Join.ROUND
-        mMaskPaint.style = Paint.Style.STROKE
-
-        mPath = Path()
-
-        mMatrix = Matrix()
         imageMatrix = mMatrix
         scaleType = ScaleType.MATRIX
-
-        mOrinCanvas = Canvas()
-        mMaskCanvas = Canvas()
-
-        mLastPoint = PointF()
-        mCirclePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mCirclePaint.isDither = true
-        mCirclePaint.color = Color.LTGRAY
-        mCirclePaint.style = Paint.Style.STROKE
-        mCirclePaint.strokeWidth = 5.0f
 
         try {
             mFingerListener = context as FingerListener
@@ -134,14 +122,13 @@ class EraserImageView: ImageView {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     mPath.lineTo(realX, realY)
-                    mOrinCanvas.drawPath(mPath, mPaint)
-                    mMaskCanvas.drawPath(mPath, mMaskPaint)
+                    mOrinCanvas.drawPath(mPath, mBrushPaint)
+                    mMaskCanvas.drawPath(mPath, mMaskBrushPaint)
 
                     currentAction = FingerListener.START
                 }
                 MotionEvent.ACTION_UP -> {
                     mCirclePaintable = false
-                    //setImageBitmap()
                     currentAction = FingerListener.STOP
                 }
                 MotionEvent.ACTION_CANCEL -> {
@@ -217,10 +204,10 @@ class EraserImageView: ImageView {
         mInverted = !mInverted
 
         if(mInverted) {
-            mMaskPaint.color = Color.BLACK
+            mMaskBrushPaint.color = Color.BLACK
         } else {
-            mMaskPaint.color = Color.TRANSPARENT
-            mMaskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+            mMaskBrushPaint.color = Color.TRANSPARENT
+            mMaskBrushPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
         }
 
         NativeHelper.invertMaskImg(mMaskBmp)
