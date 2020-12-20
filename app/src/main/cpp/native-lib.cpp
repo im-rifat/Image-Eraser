@@ -10,7 +10,7 @@
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 #define JNI_METHOD(NAME) \
-    Java_org_nativelib_wrapper_NativeHelper_##NAME
+    Java_org_nativelib_wrapper_NativeLibHelper_##NAME
 
 extern "C" {
 JNIEXPORT void JNICALL JNI_METHOD(invertMaskImg) (JNIEnv *env, jobject thiz, jobject img, jint black, jint transparent);

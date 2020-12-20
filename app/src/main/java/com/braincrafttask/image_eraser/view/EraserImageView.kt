@@ -3,14 +3,15 @@ package com.braincrafttask.image_eraser.view
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
-import com.braincrafttask.image_eraser.model.EraserState
-import org.nativelib.wrapper.NativeHelper
+import android.widget.Toast
+import com.braincrafttask.image_eraser.model.DrawingPath
+import com.braincrafttask.image_eraser.model.DrawingState
+import com.braincrafttask.image_eraser.model.Invert
+import org.nativelib.wrapper.NativeLibHelper
 import java.lang.ClassCastException
-import java.lang.Exception
 import java.util.*
 
 
@@ -81,7 +82,7 @@ class EraserImageView: ImageView {
 
     private var mFingerListener: FingerListener? = null
 
-    private val mStates: Vector<EraserState> = Vector()
+    private val mStates: Deque<DrawingState> = LinkedList()
 
     constructor(context: Context): this(context, null)
 
@@ -111,8 +112,6 @@ class EraserImageView: ImageView {
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-
-        Log.wtf(TAG, event?.toString())
 
         event?.let {
             val action: Int = event.action
@@ -147,6 +146,7 @@ class EraserImageView: ImageView {
                     currentAction = FingerListener.MOVE
                 }
                 MotionEvent.ACTION_UP -> {
+                    mStates.addFirst(DrawingPath(mMaskBrushPaint, Path(mPath)))
                     mPath.reset()
                     mCirclePaintable = false
                 }
@@ -216,15 +216,44 @@ class EraserImageView: ImageView {
     private var mInverted: Boolean = true
 
     fun invert() {
-        mInverted = !mInverted
-
-        NativeHelper.invertMaskImg(mMaskBmp)
+        NativeLibHelper.invertMaskImg(mMaskBmp)
         mMaskCanvas.setBitmap(mMaskBmp)
 
         initEditableBmp()
 
         setImageBitmap(mEditableBmp)
+
+        if(!mInverted) {
+            mStates.addFirst(Invert)
+        }
+
+        mInverted = false
     }
+
+    fun undo() {
+        val currentState = mStates.removeFirst()
+
+        this.mMaskBmp = Bitmap.createBitmap(mOriginalBmp.width, mOriginalBmp.height, mOriginalBmp.config)
+        this.mMaskCanvas.setBitmap(this.mMaskBmp)
+        this.mMaskCanvas.drawColor(Color.BLACK)
+
+        mStates.descendingIterator().forEach {
+            when(it) {
+                is DrawingPath -> {
+                    this.mMaskCanvas.drawPath(it.path, it.paint)
+                }
+
+                is Invert -> {
+                    NativeLibHelper.invertMaskImg(this.mMaskBmp)
+                }
+            }
+        }
+
+        initEditableBmp()
+        setImageBitmap(mEditableBmp)
+    }
+
+    fun getUndoStateSize() = mStates.size
 
     fun getCurrentScale(): Float {
         mMatrix.getValues(mMatVals)

@@ -3,7 +3,7 @@ package org.nativelib.wrapper
 import android.graphics.Bitmap
 import android.graphics.Color
 
-object NativeHelper {
+object NativeLibHelper {
 
     /**
      * this method invert mask images black to transparent,

@@ -52,7 +52,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/eraserTopMenuHolder"
         android:background="@drawable/brush_view_repeat"
-        android:id="@+id/preview"/>
+        android:id="@+id/eraserImageView"/>
 
     <com.braincrafttask.image_eraser.view.MagnifyView
         android:layout_width="match_parent"

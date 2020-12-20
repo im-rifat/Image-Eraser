@@ -9,5 +9,6 @@
     <item name="imgPreview" type="id"/>
     <item name="btnLoadImage" type="id"/>
     <item name="magnifyView" type="id"/>
+    <item name="eraserImageView" type="id"/>
 
 </resources>

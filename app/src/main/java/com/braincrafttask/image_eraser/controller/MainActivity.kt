@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.braincrafttask.image_eraser.AppConstants
 import com.braincrafttask.image_eraser.R
@@ -27,9 +28,10 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
 
     private val TAG = MainActivity::class.java.simpleName
 
-    private lateinit var mPreview: EraserImageView
+    private lateinit var mEraserImageView: EraserImageView
     private lateinit var mMagnifyView: MagnifyView
 
+    private lateinit var mBtnUndo: Button
     private lateinit var mBtnInvert: Button
     private lateinit var mBtnSave: Button
 
@@ -48,26 +50,35 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
         mMagnifyView = findViewById(R.id.magnifyView)
         mMagnifyView.setBrushSize(30f)
 
-        mPreview = findViewById(R.id.preview)
-        mPreview.setBrushSize(30f)
+        mEraserImageView = findViewById(R.id.eraserImageView)
+        mEraserImageView.setBrushSize(30f)
 
         Glide.with(this).asBitmap().load(Uri.parse(mImagePath)).override(620, 620).into(object : CustomTarget<Bitmap>() {
             override fun onLoadCleared(placeholder: Drawable?) {
             }
 
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                mPreview.setBitmap(resource)
+                mEraserImageView.setBitmap(resource)
             }
         })
 
+        mBtnUndo = findViewById(R.id.btnUndo)
+        mBtnUndo.setOnClickListener {
+            if(mEraserImageView.getUndoStateSize() == 0) {
+                Toast.makeText(it.context, it.context.resources.getString(R.string.label_no_undo_avail), Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            mEraserImageView.undo()
+        }
         mBtnInvert = findViewById(R.id.btnInvert)
         mBtnInvert.setOnClickListener {
-            mPreview.invert()
+            mEraserImageView.invert()
         }
 
         mBtnSave = findViewById(R.id.btnSave)
         mBtnSave.setOnClickListener {
-            val savedPath = WriteImageTask(this).saveImage(mPreview.getBitmap())
+            val savedPath = WriteImageTask(this).saveImage(mEraserImageView.getBitmap())
 
             val intent = Intent(this, ShareActivity::class.java)
             intent.putExtra(AppConstants.IE_PATH, savedPath)
@@ -82,8 +93,8 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
     }
 
     override fun onMoved(point: PointF, action: Int) {
-        mMagnifyView.setBitmap(mPreview.getBitmap())
-        mMagnifyView.toTranslate(point, mPreview.getCurrentScale())
+        mMagnifyView.setBitmap(mEraserImageView.getBitmap())
+        mMagnifyView.toTranslate(point, mEraserImageView.getCurrentScale())
         mMagnifyView.visibility = if(action == EraserImageView.FingerListener.STOP) View.GONE else View.VISIBLE
     }
 }

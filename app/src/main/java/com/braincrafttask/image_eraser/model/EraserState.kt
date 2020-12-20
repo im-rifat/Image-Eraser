@@ -3,7 +3,7 @@ package com.braincrafttask.image_eraser.model
 import android.graphics.Paint
 import android.graphics.Path
 
-sealed class EraserState
+sealed class DrawingState
 
-data class Erase(val paint: Paint, val path: Path): EraserState()
-class Invert: EraserState()
+data class DrawingPath(val paint: Paint, val path: Path): DrawingState()
+object Invert: DrawingState()
