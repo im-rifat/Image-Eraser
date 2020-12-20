@@ -10,16 +10,30 @@ import com.braincrafttask.image_eraser.R
 
 class MagnifyView: ImageView {
 
-    private val CIRCLE_RADIUS = context.resources.displayMetrics.density * 80f
-    private val START_POS = resources.displayMetrics.density * 10f
+    private val mDensity = resources.displayMetrics.density
+
+    private val CIRCLE_RADIUS = mDensity * 80f
+    private val START_POS = mDensity * 20f
+
+    private val DEFAULT_BRUSH_SIZE = mDensity * 10f
+
+    private var mBrushSize = DEFAULT_BRUSH_SIZE
 
     private var mPaint: Paint = Paint().apply {
         color = Color.argb(255, 255, 245, 238)
-        strokeWidth = resources.displayMetrics.density * 10f
+        strokeWidth = mDensity * 10f
         style = Paint.Style.STROKE
     }
 
-    lateinit var bitmap: Bitmap
+    private var mCirclePaint = Paint().apply {
+        isAntiAlias = true
+        isDither = true
+        color = Color.LTGRAY
+        style = Paint.Style.STROKE
+        strokeWidth = mDensity * 5.0f
+    }
+
+    private lateinit var bitmap: Bitmap
 
     private var mTranslatePoint = PointF()
 
@@ -36,12 +50,6 @@ class MagnifyView: ImageView {
 
     constructor(context: Context, attributeSet: AttributeSet?, style: Int): super(context, attributeSet, style)
 
-    fun toTranslate(translatePointF: PointF, scale: Float) {
-        mTranslatePoint = PointF(CIRCLE_RADIUS/1.25f + (-translatePointF.x * scale), CIRCLE_RADIUS/1.25f + (-translatePointF.y * scale))
-        mMatrix.setScale(scale, scale)
-        invalidate()
-    }
-
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
@@ -55,6 +63,7 @@ class MagnifyView: ImageView {
             it.translate(mTranslatePoint.x, mTranslatePoint.y)
             if(this::bitmap.isInitialized) it.drawBitmap(bitmap, mMatrix, null)
             it.restore()
+            it.drawCircle(CIRCLE_RADIUS + START_POS, CIRCLE_RADIUS + START_POS, mBrushSize, mCirclePaint)
         }
     }
 
@@ -62,5 +71,19 @@ class MagnifyView: ImageView {
         return Path().apply {
             addCircle(CIRCLE_RADIUS + START_POS, CIRCLE_RADIUS + START_POS, CIRCLE_RADIUS, Path.Direction.CW)
         }
+    }
+
+    fun toTranslate(translatePointF: PointF, scale: Float) {
+        mTranslatePoint = PointF((CIRCLE_RADIUS + START_POS) + (-translatePointF.x * scale), (CIRCLE_RADIUS + START_POS) + (-translatePointF.y * scale))
+        mMatrix.setScale(scale, scale)
+        invalidate()
+    }
+
+    fun setBitmap(bitmap: Bitmap) {
+        this.bitmap = bitmap
+    }
+
+    fun setBrushSize(brushSize: Float) {
+        this.mBrushSize = mDensity * brushSize
     }
 }

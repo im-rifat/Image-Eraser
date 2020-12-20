@@ -2,7 +2,6 @@ package com.braincrafttask.image_eraser
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException

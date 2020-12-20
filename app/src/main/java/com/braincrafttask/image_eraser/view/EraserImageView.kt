@@ -5,10 +5,12 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
 import android.widget.ImageView
 import com.braincrafttask.image_eraser.model.EraserState
 import org.nativelib.wrapper.NativeHelper
 import java.lang.ClassCastException
+import java.lang.Exception
 import java.util.*
 
 
@@ -17,6 +19,7 @@ class EraserImageView: ImageView {
     interface FingerListener {
         companion object {
             const val START = 1
+            const val MOVE = 2
             const val STOP = 0
         }
 
@@ -25,7 +28,11 @@ class EraserImageView: ImageView {
 
     private val TAG = EraserImageView::class.java.simpleName
 
-    private val BRUSH_SIZE = resources.displayMetrics.density * 20f
+    private val mDensity = resources.displayMetrics.density
+
+    private val DEFUALT_BRUSH_SIZE = mDensity * 10f
+
+    private var mBrushSize = DEFUALT_BRUSH_SIZE
 
     private val mOrinCanvas = Canvas()
     private lateinit var mOriginalBmp: Bitmap
@@ -35,7 +42,7 @@ class EraserImageView: ImageView {
         isAntiAlias = true
         isDither = true
         color = Color.BLACK
-        strokeWidth = BRUSH_SIZE
+        strokeWidth = mBrushSize
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
         style = Paint.Style.STROKE
@@ -43,6 +50,7 @@ class EraserImageView: ImageView {
     }
 
     private var mPath = Path()
+    private var mCirclePath = Path()
 
     private val mMatVals = FloatArray(9)
     private var mMatrix = Matrix()
@@ -59,7 +67,7 @@ class EraserImageView: ImageView {
         isDither = true
         color = Color.LTGRAY
         style = Paint.Style.STROKE
-        strokeWidth = 5.0f
+        strokeWidth = mDensity * 5.0f
     }
 
     private var mCirclePaintable: Boolean = false
@@ -70,7 +78,6 @@ class EraserImageView: ImageView {
     private var origHeight: Float = 0f
     private var oldMeasuredWidth: Int = 0
     private var oldMeasuredHeight: Int = 0
-    private var mCurrentScale: Float = 1.0f
 
     private var mFingerListener: FingerListener? = null
 
@@ -88,14 +95,18 @@ class EraserImageView: ImageView {
             mFingerListener = context as FingerListener
         } catch (e: ClassCastException) {
         }
+
+        setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     }
 
     override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
         this.mMatrix.getValues(mMatVals)
 
+        super.onDraw(canvas)
+
         canvas?.let {
-            if(mCirclePaintable) it.drawCircle(mLastPoint.x, mLastPoint.y, 30f, mCirclePaint)
+            //if(mCirclePaintable) it.drawCircle(mLastPoint.x, mLastPoint.y, mBrushSize / mDensity, mCirclePaint)
+            if(mCirclePaintable) it.drawPath(mCirclePath, mCirclePaint)
         }
     }
 
@@ -106,17 +117,21 @@ class EraserImageView: ImageView {
         event?.let {
             val action: Int = event.action
 
-            val realX = (event.x - mMatVals[Matrix.MTRANS_X]) / mMatVals[Matrix.MSCALE_X]
-            val realY = (event.y - mMatVals[Matrix.MTRANS_Y]) / mMatVals[Matrix.MSCALE_Y]
+            val realX = (event.x - mMatVals[Matrix.MTRANS_X]) / getCurrentScale()
+            val realY = (event.y - mMatVals[Matrix.MTRANS_Y]) / getCurrentScale()
 
             mLastPoint.set(event.x, event.y)
-            var currentAction = action
+            var currentAction = FingerListener.STOP
+            mCirclePath.reset()
 
             when(action) {
                 MotionEvent.ACTION_DOWN -> {
                     mCirclePaintable = true
-                    mPath = Path()
                     mPath.moveTo(realX, realY)
+
+                    mCirclePath.reset()
+                    mCirclePath.moveTo(event.x, event.y)
+                    mCirclePath.addCircle(event.x, event.y, mBrushSize, Path.Direction.CW)
 
                     currentAction = FingerListener.START
                 }
@@ -125,11 +140,15 @@ class EraserImageView: ImageView {
                     mOrinCanvas.drawPath(mPath, mBrushPaint)
                     mMaskCanvas.drawPath(mPath, mMaskBrushPaint)
 
-                    currentAction = FingerListener.START
+                    mCirclePath.reset()
+                    mCirclePath.moveTo(event.x, event.y)
+                    mCirclePath.addCircle(event.x, event.y, mBrushSize, Path.Direction.CW)
+
+                    currentAction = FingerListener.MOVE
                 }
                 MotionEvent.ACTION_UP -> {
+                    mPath.reset()
                     mCirclePaintable = false
-                    currentAction = FingerListener.STOP
                 }
                 MotionEvent.ACTION_CANCEL -> {
                 }
@@ -158,26 +177,15 @@ class EraserImageView: ImageView {
         }
     }
 
-    fun setBitmap(originalBmp: Bitmap) {
-        this.mOriginalBmp = originalBmp
-        mInverted = true
-        mMaskBmp = Bitmap.createBitmap(this.mOriginalBmp.width, this.mOriginalBmp.height, Bitmap.Config.ARGB_8888)
-
-        invert()
-
-        setImageBitmap(this.mEditableBmp)
-        invalidate()
-    }
-
     private fun fitScreen() {
         val drawable = drawable
         if (drawable != null && drawable.intrinsicWidth != 0 && drawable.intrinsicHeight != 0) {
             val bmWidth = drawable.intrinsicWidth
             val bmHeight = drawable.intrinsicHeight
-            mCurrentScale = Math.min(this.viewWidth.toFloat() / bmWidth.toFloat(), this.viewHeight.toFloat() / bmHeight.toFloat())
-            this.mMatrix.setScale(mCurrentScale, mCurrentScale)
-            val redundantYSpace = (this.viewHeight.toFloat() - bmHeight.toFloat() * mCurrentScale) / 2.0f
-            val redundantXSpace = (this.viewWidth.toFloat() - bmWidth.toFloat() * mCurrentScale) / 2.0f
+            val scale = Math.min(this.viewWidth.toFloat() / bmWidth.toFloat(), this.viewHeight.toFloat() / bmHeight.toFloat())
+            this.mMatrix.setScale(scale, scale)
+            val redundantYSpace = (this.viewHeight.toFloat() - bmHeight.toFloat() * scale) / 2.0f
+            val redundantXSpace = (this.viewWidth.toFloat() - bmWidth.toFloat() * scale) / 2.0f
             this.mMatrix.postTranslate(redundantXSpace, redundantYSpace)
             this.origWidth = this.viewWidth.toFloat() - 2.0f * redundantXSpace
             this.origHeight = this.viewHeight.toFloat() - 2.0f * redundantYSpace
@@ -187,28 +195,28 @@ class EraserImageView: ImageView {
         }
     }
 
+    fun setBrushSize(brushSize: Float) {
+        this.mBrushSize = (mDensity *brushSize)
+        mBrushPaint.strokeWidth = this.mBrushSize
+        mMaskBrushPaint.strokeWidth = this.mBrushSize
+    }
+
+    fun setBitmap(originalBmp: Bitmap) {
+        this.mOriginalBmp = originalBmp
+        mInverted = true
+        mMaskBmp = Bitmap.createBitmap(this.mOriginalBmp.width, this.mOriginalBmp.height, Bitmap.Config.ARGB_8888)
+
+        invert()
+    }
+
     fun getBitmap(): Bitmap {
-        val canvas = Canvas()
-        val bmp = Bitmap.createBitmap(mOriginalBmp.width, mOriginalBmp.height, Bitmap.Config.ARGB_8888)
-
-        canvas.setBitmap(bmp)
-        canvas.drawColor(Color.WHITE)
-        canvas.drawBitmap(mEditableBmp, 0f, 0f, null)
-
-        return bmp
+        return mEditableBmp
     }
 
     private var mInverted: Boolean = true
 
     fun invert() {
         mInverted = !mInverted
-
-        if(mInverted) {
-            mMaskBrushPaint.color = Color.BLACK
-        } else {
-            mMaskBrushPaint.color = Color.TRANSPARENT
-            mMaskBrushPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
-        }
 
         NativeHelper.invertMaskImg(mMaskBmp)
         mMaskCanvas.setBitmap(mMaskBmp)
@@ -218,12 +226,18 @@ class EraserImageView: ImageView {
         setImageBitmap(mEditableBmp)
     }
 
-    fun getCurrentScale() = mCurrentScale
+    fun getCurrentScale(): Float {
+        mMatrix.getValues(mMatVals)
+
+        return mMatVals[Matrix.MSCALE_X]
+    }
 
     private fun initEditableBmp() {
         val canvas = Canvas()
-        mEditableBmp = mOriginalBmp.copy(mOriginalBmp.config, true)
+        mEditableBmp = Bitmap.createBitmap(mOriginalBmp.width, mOriginalBmp.height, Bitmap.Config.ARGB_8888)
         canvas.setBitmap(mEditableBmp)
+        canvas.drawColor(Color.WHITE)
+        canvas.drawBitmap(mOriginalBmp.copy(mOriginalBmp.config, true), 0f, 0f, null)
 
         val paint = Paint()
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)

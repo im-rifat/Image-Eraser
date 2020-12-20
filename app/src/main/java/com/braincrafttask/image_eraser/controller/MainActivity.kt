@@ -45,7 +45,11 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
             mImagePath = it.getString(AppConstants.IE_PATH)
         }
 
+        mMagnifyView = findViewById(R.id.magnifyView)
+        mMagnifyView.setBrushSize(30f)
+
         mPreview = findViewById(R.id.preview)
+        mPreview.setBrushSize(30f)
 
         Glide.with(this).asBitmap().load(Uri.parse(mImagePath)).override(620, 620).into(object : CustomTarget<Bitmap>() {
             override fun onLoadCleared(placeholder: Drawable?) {
@@ -55,8 +59,6 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
                 mPreview.setBitmap(resource)
             }
         })
-
-        mMagnifyView = findViewById(R.id.magnifyView)
 
         mBtnInvert = findViewById(R.id.btnInvert)
         mBtnInvert.setOnClickListener {
@@ -80,8 +82,8 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
     }
 
     override fun onMoved(point: PointF, action: Int) {
-        mMagnifyView.bitmap = mPreview.getBitmap()
+        mMagnifyView.setBitmap(mPreview.getBitmap())
         mMagnifyView.toTranslate(point, mPreview.getCurrentScale())
-        mMagnifyView.visibility = if(action == EraserImageView.FingerListener.START) View.VISIBLE else View.GONE
+        mMagnifyView.visibility = if(action == EraserImageView.FingerListener.STOP) View.GONE else View.VISIBLE
     }
 }
