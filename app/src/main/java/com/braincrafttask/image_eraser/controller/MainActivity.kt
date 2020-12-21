@@ -24,7 +24,7 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 
-class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
+class MainActivity : AppCompatActivity(), EraserImageView.FingerTouchListener {
 
     private val TAG = MainActivity::class.java.simpleName
 
@@ -92,9 +92,12 @@ class MainActivity : AppCompatActivity(), EraserImageView.FingerListener {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onMoved(point: PointF, action: Int) {
+    override fun onFingerMoved(point: PointF, action: Int) {
+        val transformPoint = mEraserImageView.getTransformPoint()
+        val realPoint = PointF((point.x - transformPoint.x) / mEraserImageView.getCurrentScale(), (point.y - transformPoint.y) / mEraserImageView.getCurrentScale())
+
         mMagnifyView.setBitmap(mEraserImageView.getBitmap())
-        mMagnifyView.toTranslate(point, mEraserImageView.getCurrentScale())
-        mMagnifyView.visibility = if(action == EraserImageView.FingerListener.STOP) View.GONE else View.VISIBLE
+        mMagnifyView.toTranslate(realPoint, mEraserImageView.getCurrentScale())
+        mMagnifyView.visibility = if(action == EraserImageView.FingerTouchListener.STOP) View.GONE else View.VISIBLE
     }
 }

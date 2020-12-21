@@ -17,14 +17,14 @@ import java.util.*
 
 class EraserImageView: ImageView {
 
-    interface FingerListener {
+    interface FingerTouchListener {
         companion object {
             const val START = 1
             const val MOVE = 2
             const val STOP = 0
         }
 
-        fun onMoved(point: PointF, action: Int)
+        fun onFingerMoved(point: PointF, action: Int)
     }
 
     private val TAG = EraserImageView::class.java.simpleName
@@ -80,9 +80,9 @@ class EraserImageView: ImageView {
     private var oldMeasuredWidth: Int = 0
     private var oldMeasuredHeight: Int = 0
 
-    private var mFingerListener: FingerListener? = null
+    private var mFingerTouchListener: FingerTouchListener? = null
 
-    private val mStates: Deque<DrawingState> = LinkedList()
+    private val mUndoStates: Deque<DrawingState> = LinkedList()
 
     constructor(context: Context): this(context, null)
 
@@ -93,7 +93,7 @@ class EraserImageView: ImageView {
         scaleType = ScaleType.MATRIX
 
         try {
-            mFingerListener = context as FingerListener
+            mFingerTouchListener = context as FingerTouchListener
         } catch (e: ClassCastException) {
         }
 
@@ -106,7 +106,6 @@ class EraserImageView: ImageView {
         super.onDraw(canvas)
 
         canvas?.let {
-            //if(mCirclePaintable) it.drawCircle(mLastPoint.x, mLastPoint.y, mBrushSize / mDensity, mCirclePaint)
             if(mCirclePaintable) it.drawPath(mCirclePath, mCirclePaint)
         }
     }
@@ -120,7 +119,7 @@ class EraserImageView: ImageView {
             val realY = (event.y - mMatVals[Matrix.MTRANS_Y]) / getCurrentScale()
 
             mLastPoint.set(event.x, event.y)
-            var currentAction = FingerListener.STOP
+            var currentAction = FingerTouchListener.STOP
             mCirclePath.reset()
 
             when(action) {
@@ -132,7 +131,7 @@ class EraserImageView: ImageView {
                     mCirclePath.moveTo(event.x, event.y)
                     mCirclePath.addCircle(event.x, event.y, mBrushSize, Path.Direction.CW)
 
-                    currentAction = FingerListener.START
+                    currentAction = FingerTouchListener.START
                 }
                 MotionEvent.ACTION_MOVE -> {
                     mPath.lineTo(realX, realY)
@@ -143,10 +142,10 @@ class EraserImageView: ImageView {
                     mCirclePath.moveTo(event.x, event.y)
                     mCirclePath.addCircle(event.x, event.y, mBrushSize, Path.Direction.CW)
 
-                    currentAction = FingerListener.MOVE
+                    currentAction = FingerTouchListener.MOVE
                 }
                 MotionEvent.ACTION_UP -> {
-                    mStates.addFirst(DrawingPath(mMaskBrushPaint, Path(mPath)))
+                    mUndoStates.addFirst(DrawingPath(mMaskBrushPaint, Path(mPath)))
                     mPath.reset()
                     mCirclePaintable = false
                 }
@@ -157,8 +156,8 @@ class EraserImageView: ImageView {
                 }
             }
 
-            mFingerListener?.let {
-                it.onMoved(PointF(realX, realY), currentAction)
+            mFingerTouchListener?.let {
+                it.onFingerMoved(PointF(mLastPoint.x, mLastPoint.y), currentAction)
             }
         }
 
@@ -203,7 +202,7 @@ class EraserImageView: ImageView {
 
     fun setBitmap(originalBmp: Bitmap) {
         this.mOriginalBmp = originalBmp
-        mInverted = true
+        mBitmapInitialization = true
         mMaskBmp = Bitmap.createBitmap(this.mOriginalBmp.width, this.mOriginalBmp.height, Bitmap.Config.ARGB_8888)
 
         invert()
@@ -213,7 +212,7 @@ class EraserImageView: ImageView {
         return mEditableBmp
     }
 
-    private var mInverted: Boolean = true
+    private var mBitmapInitialization: Boolean = true
 
     fun invert() {
         NativeLibHelper.invertMaskImg(mMaskBmp)
@@ -223,21 +222,21 @@ class EraserImageView: ImageView {
 
         setImageBitmap(mEditableBmp)
 
-        if(!mInverted) {
-            mStates.addFirst(Invert)
+        if(!mBitmapInitialization) {
+            mUndoStates.addFirst(Invert)
         }
 
-        mInverted = false
+        mBitmapInitialization = false
     }
 
     fun undo() {
-        val currentState = mStates.removeFirst()
+        val currentState = mUndoStates.removeFirst()
 
         this.mMaskBmp = Bitmap.createBitmap(mOriginalBmp.width, mOriginalBmp.height, mOriginalBmp.config)
         this.mMaskCanvas.setBitmap(this.mMaskBmp)
         this.mMaskCanvas.drawColor(Color.BLACK)
 
-        mStates.descendingIterator().forEach {
+        mUndoStates.descendingIterator().forEach {
             when(it) {
                 is DrawingPath -> {
                     this.mMaskCanvas.drawPath(it.path, it.paint)
@@ -253,12 +252,20 @@ class EraserImageView: ImageView {
         setImageBitmap(mEditableBmp)
     }
 
-    fun getUndoStateSize() = mStates.size
+    fun getUndoStateSize() = mUndoStates.size
 
     fun getCurrentScale(): Float {
         mMatrix.getValues(mMatVals)
 
         return mMatVals[Matrix.MSCALE_X]
+    }
+
+    fun getTransformPoint(): PointF {
+        mMatrix.getValues(mMatVals)
+
+        val pointF = PointF(mMatVals[Matrix.MTRANS_X], mMatVals[Matrix.MTRANS_Y])
+
+        return pointF
     }
 
     private fun initEditableBmp() {
